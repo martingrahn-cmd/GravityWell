@@ -13,11 +13,13 @@
     background: #000;
     overflow: hidden;
     font-family: 'Exo 2', sans-serif;
-    cursor: none;
+    cursor: default;
     -webkit-user-select: none;
     user-select: none;
     touch-action: none;
   }
+
+  body.playing { cursor: none; }
 
   canvas {
     display: block;
@@ -175,6 +177,15 @@
     font-family: 'Orbitron', monospace;
   }
   .tab-btn:hover { color: #7850ff88; }
+  .menu-focused {
+    outline: none !important;
+    box-shadow: 0 0 0 3px #fff, 0 0 20px #ffffffaa !important;
+    transform: scale(1.08);
+    background: #fff !important;
+    color: #050508 !important;
+    border-color: #fff !important;
+    transition: all .15s;
+  }
   .tab-btn.active {
     color: #7850ff;
     border-bottom-color: #7850ff;
@@ -778,7 +789,11 @@ function playAchSFX() {
   osc2.start(now + 0.08); osc2.stop(now + 0.5);
 }
 
-// --- Tab Switching ---
+// --- Tab Switching & Keyboard Navigation ---
+const TAB_ORDER = ['play', 'scores', 'trophies', 'guide', 'settings'];
+let menuFocus = -1;
+let currentTabIndex = 0;
+
 function switchTab(tabName) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tabName));
@@ -786,7 +801,13 @@ function switchTab(tabName) {
   if (tabName === 'trophies') renderTrophyGrid();
 }
 document.querySelectorAll('.tab-btn').forEach(b => {
-  b.addEventListener('click', () => switchTab(b.dataset.tab));
+  b.addEventListener('click', () => {
+    const idx = TAB_ORDER.indexOf(b.dataset.tab);
+    if (idx >= 0) currentTabIndex = idx;
+    menuFocus = -1;
+    switchTab(b.dataset.tab);
+    updateMenuFocusVisual();
+  });
 });
 
 // --- Render Scores ---
@@ -873,6 +894,7 @@ function initSettings() {
 // --- Show Menu ---
 function showMenu(isGameOver) {
   menuOverlay.classList.remove('hidden');
+  document.body.classList.remove('playing');
   const finalScore = document.getElementById('final-score');
   const finalStats = document.getElementById('final-stats');
   const bestDisplay = document.getElementById('best-score-display');
@@ -895,7 +917,134 @@ function showMenu(isGameOver) {
     btnStart.textContent = 'ENTER THE VOID';
   }
   switchTab('play');
+  menuFocus = -1; // reset focus to tab bar
 }
+
+// --- Keyboard Navigation ---
+function getActiveTab() { return TAB_ORDER[currentTabIndex]; }
+
+function getFocusableItems() {
+  const tab = getActiveTab();
+  if (tab === 'play') return [btnStart];
+  if (tab === 'settings') return Array.from(document.querySelectorAll('.setting-toggle'));
+  return [];
+}
+
+function updateMenuFocusVisual() {
+  // Remove all focus highlights
+  document.querySelectorAll('.menu-focused').forEach(el => el.classList.remove('menu-focused'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('menu-focused'));
+
+  if (!menuOverlay.classList.contains('hidden')) {
+    if (menuFocus < 0) {
+      // Highlight active tab button
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      if (tabBtns[currentTabIndex]) tabBtns[currentTabIndex].classList.add('menu-focused');
+    } else {
+      // Highlight content item
+      const items = getFocusableItems();
+      if (items[menuFocus]) items[menuFocus].classList.add('menu-focused');
+    }
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  // If game is running, ignore menu keys (except Escape for future pause)
+  if (state.running || state.dying) return;
+  if (menuOverlay.classList.contains('hidden')) return;
+
+  const key = e.key;
+
+  if (key === 'Tab') {
+    e.preventDefault();
+    // Cycle tabs
+    if (e.shiftKey) {
+      currentTabIndex = (currentTabIndex - 1 + TAB_ORDER.length) % TAB_ORDER.length;
+    } else {
+      currentTabIndex = (currentTabIndex + 1) % TAB_ORDER.length;
+    }
+    menuFocus = -1;
+    switchTab(TAB_ORDER[currentTabIndex]);
+    updateMenuFocusVisual();
+    return;
+  }
+
+  if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
+    e.preventDefault();
+    if (menuFocus < 0) {
+      currentTabIndex = (currentTabIndex - 1 + TAB_ORDER.length) % TAB_ORDER.length;
+      switchTab(TAB_ORDER[currentTabIndex]);
+    }
+    updateMenuFocusVisual();
+    return;
+  }
+
+  if (key === 'ArrowRight' || key === 'd' || key === 'D') {
+    e.preventDefault();
+    if (menuFocus < 0) {
+      currentTabIndex = (currentTabIndex + 1) % TAB_ORDER.length;
+      switchTab(TAB_ORDER[currentTabIndex]);
+    }
+    updateMenuFocusVisual();
+    return;
+  }
+
+  if (key === 'ArrowDown' || key === 's' || key === 'S') {
+    e.preventDefault();
+    const items = getFocusableItems();
+    if (items.length > 0) {
+      menuFocus = Math.min(menuFocus + 1, items.length - 1);
+    }
+    updateMenuFocusVisual();
+    return;
+  }
+
+  if (key === 'ArrowUp' || key === 'w' || key === 'W') {
+    e.preventDefault();
+    if (menuFocus >= 0) {
+      menuFocus--;
+    }
+    updateMenuFocusVisual();
+    return;
+  }
+
+  if (key === 'Enter' || key === ' ') {
+    e.preventDefault();
+    if (menuFocus < 0) {
+      // On tab bar — enter tab content
+      const items = getFocusableItems();
+      if (items.length > 0) {
+        menuFocus = 0;
+        updateMenuFocusVisual();
+      }
+    } else {
+      // Activate focused item
+      const items = getFocusableItems();
+      if (items[menuFocus]) items[menuFocus].click();
+    }
+    return;
+  }
+
+  // Number keys 1-5 to switch tabs directly
+  if (key >= '1' && key <= '5') {
+    e.preventDefault();
+    currentTabIndex = parseInt(key) - 1;
+    menuFocus = -1;
+    switchTab(TAB_ORDER[currentTabIndex]);
+    updateMenuFocusVisual();
+    return;
+  }
+
+  // Escape from content back to tab bar
+  if (key === 'Escape') {
+    e.preventDefault();
+    if (menuFocus >= 0) {
+      menuFocus = -1;
+      updateMenuFocusVisual();
+    }
+    return;
+  }
+});
 
 // --- Audio System ---
 const AudioSystem = {
@@ -2986,6 +3135,7 @@ startGame = function() {
   saveGWData();
 
   menuOverlay.classList.add('hidden');
+  document.body.classList.add('playing');
   hud.style.display = 'flex';
   updateHUD();
 
