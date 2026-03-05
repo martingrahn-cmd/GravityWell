@@ -16,10 +16,12 @@
     cursor: default;
     -webkit-user-select: none;
     user-select: none;
-    touch-action: none;
   }
 
-  body.playing { cursor: none; }
+  body.playing {
+    cursor: none;
+    touch-action: none;
+  }
 
   canvas {
     display: block;
@@ -197,11 +199,15 @@
     align-items: center;
     justify-content: center;
     width: 100%;
+  }
+  .tab-content.active { display: flex; }
+  .tab-content.scrollable {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
+    scrollbar-width: none;
   }
-  .tab-content.active { display: flex; }
+  .tab-content.scrollable::-webkit-scrollbar { display: none; }
 
   /* PLAY TAB */
   #game-title {
@@ -280,9 +286,9 @@
     width: min(90vw, 420px);
     max-height: 55vh;
     overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #7850ff33 transparent;
+    scrollbar-width: none;
   }
+  #scores-list::-webkit-scrollbar { display: none; }
   .score-row {
     display: flex;
     align-items: center;
@@ -353,9 +359,9 @@
     touch-action: pan-y;
     padding: 8px;
     width: min(92vw, 540px);
-    scrollbar-width: thin;
-    scrollbar-color: #7850ff33 transparent;
+    scrollbar-width: none;
   }
+  #trophy-grid::-webkit-scrollbar { display: none; }
   .trophy-card {
     background: #0a0a1899;
     border: 1px solid #ffffff11;
@@ -416,9 +422,9 @@
     max-height: 58vh;
     width: min(90vw, 400px);
     padding: 0 8px;
-    scrollbar-width: thin;
-    scrollbar-color: #7850ff33 transparent;
+    scrollbar-width: none;
   }
+  #guide-wrap::-webkit-scrollbar { display: none; }
   .guide-section {
     font-size: 12px; font-weight: 700; letter-spacing: 3px;
     color: #7850ff; margin: 16px 0 8px; padding-bottom: 4px;
@@ -470,11 +476,29 @@
   #ach-toast-name { font-size: 14px; color: #fff; font-weight: 700; letter-spacing: 1px; }
 
   @media (max-width: 480px) {
-    .tab-btn { padding: 8px 12px; font-size: 9px; letter-spacing: 2px; }
-    #game-title { margin-bottom: 4px; }
-    #game-subtitle { margin-bottom: 16px; }
+    .tab-btn { padding: 8px 10px; font-size: 8px; letter-spacing: 1.5px; }
+    #menu-inner { max-height: 94vh; }
+    #game-title { margin-bottom: 2px; font-size: clamp(36px, 10vw, 56px); }
+    #game-subtitle { margin-bottom: 12px; font-size: 11px; }
+    #final-score { font-size: clamp(28px, 8vw, 44px); }
+    #final-stats { font-size: 10px; }
+    #best-score-display { font-size: 11px; margin-bottom: 16px; }
     #start-btn, #menu-btn { padding: 14px 36px; font-size: 15px; }
-    #trophy-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+    #trophy-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); max-height: 50vh; }
+    #scores-list { max-height: 50vh; }
+    #guide-wrap { max-height: 52vh; }
+    #scores-title, .guide-title, #settings-title, #trophy-title { font-size: clamp(20px, 5vw, 28px); }
+    .guide-row { font-size: 12px; }
+    .setting-label { font-size: 12px; letter-spacing: 2px; }
+    .setting-toggle { padding: 8px 24px; min-height: 40px; }
+    #tab-bar { margin-bottom: 12px; }
+  }
+  @media (max-height: 600px) {
+    #game-title { font-size: clamp(28px, 8vw, 44px); }
+    #game-subtitle { margin-bottom: 8px; }
+    #best-score-display { margin-bottom: 12px; }
+    #trophy-grid, #scores-list { max-height: 42vh; }
+    #guide-wrap { max-height: 45vh; }
   }
 </style>
 </head>
@@ -764,7 +788,7 @@ function processAchToast() {
 }
 
 function playAchSFX() {
-  if (!SFX.ctx || AudioSystem.muted) return;
+  if (!SFX.ctx || !gwData.sfxEnabled) return;
   const ctx = SFX.ctx;
   const now = ctx.currentTime;
   // Bright chime
@@ -876,7 +900,7 @@ function initSettings() {
   musicBtn.addEventListener('click', () => {
     gwData.musicEnabled = !gwData.musicEnabled;
     AudioSystem.muted = !gwData.musicEnabled;
-    if (AudioSystem.muted) AudioSystem.layers.forEach(l => l.volume = 0);
+    if (AudioSystem.muted && AudioSystem.track) AudioSystem.track.volume = 0;
     musicBtn.textContent = gwData.musicEnabled ? 'ON' : 'OFF';
     musicBtn.classList.toggle('on', gwData.musicEnabled);
     audioToggle.textContent = gwData.musicEnabled ? '🔊' : '🔇';
@@ -1048,22 +1072,16 @@ document.addEventListener('keydown', (e) => {
 
 // --- Audio System ---
 const AudioSystem = {
-  layers: [],
-  masterVolume: 0.6,
+  track: null,
+  volume: 0.6,
   muted: false,
   started: false,
-  targetVolumes: [0, 0, 0],
-  currentVolumes: [0, 0, 0],
 
   init() {
-    const files = ['audio/001_Synthwave_4k.mp3', 'audio/002_Synthwave_15k.mp3', 'audio/fight_looped.mp3'];
-    files.forEach((src, i) => {
-      const audio = new Audio(src);
-      audio.loop = true;
-      audio.volume = 0;
-      audio.preload = 'auto';
-      this.layers.push(audio);
-    });
+    this.track = new Audio('audio/music_01.mp3');
+    this.track.loop = true;
+    this.track.volume = 0;
+    this.track.preload = 'auto';
 
     audioToggle.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1072,9 +1090,10 @@ const AudioSystem = {
       audioToggle.textContent = this.muted ? '🔇' : '🔊';
       audioToggle.classList.toggle('muted', this.muted);
       if (this.muted) {
-        this.layers.forEach(l => l.volume = 0);
+        this.track.volume = 0;
+      } else if (this.started) {
+        this.track.volume = this.volume;
       }
-      // Sync settings UI if visible
       const musicBtn = document.getElementById('music-btn');
       if (musicBtn) {
         musicBtn.textContent = gwData.musicEnabled ? 'ON' : 'OFF';
@@ -1087,46 +1106,27 @@ const AudioSystem = {
   start() {
     if (this.started) return;
     this.started = true;
-    this.layers.forEach(l => {
-      l.currentTime = 0;
-      l.play().catch(() => {});
-    });
+    this.track.currentTime = 0;
+    this.track.volume = this.muted ? 0 : this.volume;
+    this.track.play().catch(() => {});
   },
 
-  // Set target volumes based on wave index
-  setWave(waveIndex) {
-    // Always intense - no zen intro
-    if (waveIndex <= 1) {
-      this.targetVolumes = [0, 0.4, 0.7];
-    } else if (waveIndex === 2) {
-      this.targetVolumes = [0, 0.2, 0.85];
-    } else {
-      this.targetVolumes = [0, 0, 1];
-    }
-  },
+  setWave() {},
 
-  // Call every frame for smooth crossfade
   update() {
     if (!this.started || this.muted) return;
-    const fadeSpeed = 0.008; // ~2 sec full fade at 60fps
-    for (let i = 0; i < 3; i++) {
-      const diff = this.targetVolumes[i] - this.currentVolumes[i];
-      if (Math.abs(diff) > 0.001) {
-        this.currentVolumes[i] += diff * fadeSpeed + Math.sign(diff) * 0.001;
-        this.currentVolumes[i] = Math.max(0, Math.min(1, this.currentVolumes[i]));
-      }
-      this.layers[i].volume = this.currentVolumes[i] * this.masterVolume;
+    // Smooth fade in
+    if (this.track.volume < this.volume) {
+      this.track.volume = Math.min(this.volume, this.track.volume + 0.005);
     }
   },
 
   stop() {
-    this.layers.forEach(l => {
-      l.pause();
-      l.currentTime = 0;
-    });
+    if (this.track) {
+      this.track.pause();
+      this.track.currentTime = 0;
+    }
     this.started = false;
-    this.currentVolumes = [0, 0, 0];
-    this.targetVolumes = [0, 0, 0];
   }
 };
 
@@ -1300,7 +1300,7 @@ const SFX = {
 
   // Call every frame
   update(mass, maxMass, startMass, health, maxHealth, particles, holeX, holeY) {
-    if (!this.started || AudioSystem.muted) {
+    if (!this.started || !gwData.sfxEnabled) {
       if (this.droneGain) this.droneGain.gain.value = 0;
       if (this.windGain) this.windGain.gain.value = 0;
       if (this.heartbeatGain) this.heartbeatGain.gain.value = 0;
@@ -1365,7 +1365,7 @@ const SFX = {
 
   // Eat sound with combo pitch scaling
   playEat(type) {
-    if (!this.ctx || AudioSystem.muted || !gwData.sfxEnabled) return;
+    if (!this.ctx || !gwData.sfxEnabled) return;
     const ctx = this.ctx;
     const now = ctx.currentTime;
 
@@ -1469,7 +1469,7 @@ const SFX = {
 
   // Damage sound — violent metallic crunch
   playHit() {
-    if (!this.ctx || AudioSystem.muted || !gwData.sfxEnabled) return;
+    if (!this.ctx || !gwData.sfxEnabled) return;
     const ctx = this.ctx;
     const now = ctx.currentTime;
 
@@ -1540,7 +1540,7 @@ const SFX = {
 
   // Wave transition sound — dramatic swoosh + impact
   playWaveTransition() {
-    if (!this.ctx || AudioSystem.muted || !gwData.sfxEnabled) return;
+    if (!this.ctx || !gwData.sfxEnabled) return;
     const ctx = this.ctx;
     const now = ctx.currentTime;
 
@@ -1596,7 +1596,7 @@ const SFX = {
 
   // Death sequence sound — implosion boom + descending doom chord
   playDeath() {
-    if (!this.ctx || AudioSystem.muted || !gwData.sfxEnabled) return;
+    if (!this.ctx || !gwData.sfxEnabled) return;
     const ctx = this.ctx;
     const now = ctx.currentTime;
 
@@ -1700,7 +1700,7 @@ const SFX = {
   gameOverNodes: null,
   playGameOver() {
     this.ensureContext();
-    if (AudioSystem.muted || !gwData.sfxEnabled) return;
+    if (!gwData.sfxEnabled) return;
     const ctx = this.ctx;
     const now = ctx.currentTime;
 
