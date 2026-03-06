@@ -25,8 +25,11 @@
 
   canvas {
     display: block;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
   }
 
   #hud {
@@ -1906,20 +1909,35 @@ function generateStars() {
 }
 
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => {
+  setTimeout(resize, 150); // Delay for browser to finish rotating
+});
 resize();
 
 // --- Input ---
+const TOUCH_OFFSET_Y = -60; // Black hole appears above finger so thumb doesn't cover it
+let isTouch = false;
+
 function handlePointer(e) {
-  const touch = e.touches ? e.touches[0] : e;
-  state.mouseX = touch.clientX;
-  state.mouseY = touch.clientY;
+  if (e.touches) {
+    isTouch = true;
+    const touch = e.touches[0];
+    state.mouseX = touch.clientX;
+    state.mouseY = touch.clientY + TOUCH_OFFSET_Y;
+  } else {
+    state.mouseX = e.clientX;
+    state.mouseY = e.clientY;
+  }
 }
 
 window.addEventListener('mousemove', handlePointer);
-window.addEventListener('touchmove', handlePointer, { passive: false });
+window.addEventListener('touchmove', (e) => {
+  handlePointer(e);
+  if (state.running) e.preventDefault();
+}, { passive: false });
 window.addEventListener('touchstart', (e) => {
   handlePointer(e);
-  e.preventDefault();
+  if (state.running) e.preventDefault();
 }, { passive: false });
 
 // --- Start / Restart ---
