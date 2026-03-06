@@ -158,19 +158,24 @@
     align-items: center;
     width: min(94vw, 600px);
     max-height: 92vh;
+    max-height: 92dvh;
+    overflow: hidden;
   }
   #tab-bar {
     display: flex;
     gap: 0;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     border-bottom: 2px solid #7850ff33;
     flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
   }
   .tab-btn {
-    padding: 10px 20px;
-    font-size: 11px;
+    padding: 8px 14px;
+    font-size: 10px;
     font-weight: 700;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     text-transform: uppercase;
     color: #556;
     background: transparent;
@@ -180,6 +185,7 @@
     transition: all .2s;
     margin-bottom: -2px;
     font-family: 'Orbitron', monospace;
+    white-space: nowrap;
   }
   .tab-btn:hover { color: #7850ff88; }
   .menu-focused {
@@ -200,17 +206,18 @@
     display: none;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     width: 100%;
-  }
-  .tab-content.active { display: flex; }
-  .tab-content.scrollable {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
     scrollbar-width: none;
+    padding: 0 4px;
   }
-  .tab-content.scrollable::-webkit-scrollbar { display: none; }
+  .tab-content::-webkit-scrollbar { display: none; }
+  .tab-content.active { display: flex; }
 
   /* PLAY TAB */
   #game-title {
@@ -287,11 +294,7 @@
   }
   #scores-list {
     width: min(90vw, 420px);
-    max-height: 55vh;
-    overflow-y: auto;
-    scrollbar-width: none;
   }
-  #scores-list::-webkit-scrollbar { display: none; }
   .score-row {
     display: flex;
     align-items: center;
@@ -356,15 +359,9 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 8px;
-    max-height: 55vh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
     padding: 8px;
     width: min(92vw, 540px);
-    scrollbar-width: none;
   }
-  #trophy-grid::-webkit-scrollbar { display: none; }
   .trophy-card {
     background: #0a0a1899;
     border: 1px solid #ffffff11;
@@ -419,15 +416,9 @@
 
   /* GUIDE TAB */
   #guide-wrap {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-    max-height: 58vh;
     width: min(90vw, 400px);
     padding: 0 8px;
-    scrollbar-width: none;
   }
-  #guide-wrap::-webkit-scrollbar { display: none; }
   .guide-section {
     font-size: 12px; font-weight: 700; letter-spacing: 3px;
     color: #7850ff; margin: 16px 0 8px; padding-bottom: 4px;
@@ -479,29 +470,28 @@
   #ach-toast-name { font-size: 14px; color: #fff; font-weight: 700; letter-spacing: 1px; }
 
   @media (max-width: 480px) {
-    .tab-btn { padding: 8px 10px; font-size: 8px; letter-spacing: 1.5px; }
-    #menu-inner { max-height: 94vh; }
-    #game-title { margin-bottom: 2px; font-size: clamp(36px, 10vw, 56px); }
-    #game-subtitle { margin-bottom: 12px; font-size: 11px; }
-    #final-score { font-size: clamp(28px, 8vw, 44px); }
-    #final-stats { font-size: 10px; }
-    #best-score-display { font-size: 11px; margin-bottom: 16px; }
-    #start-btn, #menu-btn { padding: 14px 36px; font-size: 15px; }
-    #trophy-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); max-height: 50vh; }
-    #scores-list { max-height: 50vh; }
-    #guide-wrap { max-height: 52vh; }
-    #scores-title, .guide-title, #settings-title, #trophy-title { font-size: clamp(20px, 5vw, 28px); }
-    .guide-row { font-size: 12px; }
-    .setting-label { font-size: 12px; letter-spacing: 2px; }
-    .setting-toggle { padding: 8px 24px; min-height: 40px; }
-    #tab-bar { margin-bottom: 12px; }
+    .tab-btn { padding: 6px 8px; font-size: 8px; letter-spacing: 1px; }
+    #menu-inner { max-height: 94dvh; }
+    #game-title { margin-bottom: 2px; font-size: clamp(28px, 8vw, 48px); }
+    #game-subtitle { margin-bottom: 8px; font-size: 10px; }
+    #final-score { font-size: clamp(24px, 7vw, 36px); }
+    #final-stats { font-size: 10px; gap: 4px; }
+    #best-score-display { font-size: 11px; margin-bottom: 12px; }
+    #start-btn, #menu-btn { padding: 12px 28px; font-size: 14px; }
+    #trophy-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 6px; }
+    #scores-title, .guide-title, #settings-title, #trophy-title { font-size: clamp(18px, 5vw, 24px); }
+    .guide-row { font-size: 11px; }
+    .setting-label { font-size: 11px; letter-spacing: 2px; }
+    .setting-toggle { padding: 8px 20px; min-height: 38px; font-size: 11px; }
+    #tab-bar { margin-bottom: 8px; }
+    #hud { padding: 10px 12px; }
+    .hud-value { font-size: 16px; }
+    .hud-label { font-size: 9px; }
   }
   @media (max-height: 600px) {
     #game-title { font-size: clamp(28px, 8vw, 44px); }
     #game-subtitle { margin-bottom: 8px; }
     #best-score-display { margin-bottom: 12px; }
-    #trophy-grid, #scores-list { max-height: 42vh; }
-    #guide-wrap { max-height: 45vh; }
   }
 </style>
 </head>
@@ -2203,7 +2193,8 @@ function spawnParticle() {
 
   const def = PARTICLE_TYPES[type];
   const color = def.colors[Math.floor(Math.random() * def.colors.length)];
-  const radius = def.radius();
+  const pScale = Math.min(1, Math.min(W, H) / 800);
+  const radius = def.radius() * pScale;
 
   // Drift toward center-ish
   const angle = Math.atan2(H / 2 - y + (Math.random() - 0.5) * H * 0.6, W / 2 - x + (Math.random() - 0.5) * W * 0.6);
@@ -2284,7 +2275,8 @@ function update() {
   state.holeX += (state.mouseX - state.holeX) * followSpeed;
   state.holeY += (state.mouseY - state.holeY) * followSpeed;
 
-  const holeRadius = 18 + (state.mass - CONFIG.START_MASS) / 45;
+  const screenScale = Math.min(window.innerWidth, window.innerHeight) / 800;
+  const holeRadius = (18 + (state.mass - CONFIG.START_MASS) / 45) * Math.min(1, screenScale);
   const gravityRange = holeRadius * CONFIG.GRAVITY_RANGE_MULT;
 
   // Spawn particles (paused during wave calm)
@@ -2566,7 +2558,8 @@ function render() {
     ctx.globalAlpha = 1;
   }
 
-  const holeRadius = 18 + (state.mass - CONFIG.START_MASS) / 45;
+  const screenScale = Math.min(window.innerWidth, window.innerHeight) / 800;
+  const holeRadius = (18 + (state.mass - CONFIG.START_MASS) / 45) * Math.min(1, screenScale);
 
   // --- Draw gravity field (color matches wave) ---
   const gravRange = holeRadius * CONFIG.GRAVITY_RANGE_MULT;
